@@ -4,6 +4,7 @@
 #include "openssl_cpp.h"
 #include <openssl/rsa.h>
 #include <openssl/ec.h>
+#include <openssl/x509.h>
 
 
 void checkResult(int result, char const *name)
@@ -48,16 +49,16 @@ void write(std::string const &prefix, OpenSSL::Key const &key)
 {
 // --- write public
     {
-        auto publicKeyLen   = i2d_PublicKey(key.get(),nullptr);
+        auto publicKeyLen   = i2d_PUBKEY(key.get(),nullptr);
 
-        checkResult(publicKeyLen,"i2d_PublicKey");
+        checkResult(publicKeyLen,"i2d_PUBKEY");
 
         auto publicKey      = std::vector<unsigned char>(publicKeyLen, 0);
         auto data           = publicKey.data();
 
-        publicKeyLen        = i2d_PublicKey(key.get(),&data);
+        publicKeyLen        = i2d_PUBKEY(key.get(),&data);
 
-        checkResult(publicKeyLen,"i2d_PublicKey");
+        checkResult(publicKeyLen,"i2d_PUBKEY");
 
         write(prefix + "PublicKey", publicKey);
     }
@@ -96,6 +97,9 @@ void genRSA()
   
     checkResult(result,"EVP_PKEY_CTX_set_rsa_keygen_bits");
 
+//
+// ---
+//
 
     auto key        = OpenSSL::Key{};
 
@@ -121,6 +125,10 @@ void genEC()
     result = EVP_PKEY_CTX_set_ec_paramgen_curve_nid(keyContext.get(), NID_X9_62_prime256v1);
     
     checkResult(result,"EVP_PKEY_CTX_set_ec_paramgen_curve_nid");
+
+//
+// ---
+//
 
     auto key        = OpenSSL::Key{};
 

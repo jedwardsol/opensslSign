@@ -1,9 +1,12 @@
 #include <print>
 #include <vector>
+#include <span>
 
 #include <openssl/evp.h>
 #include <openssl/rsa.h>
+#include <openssl/ec.h>
 #include <openssl/core_names.h>
+#include <openssl/x509.h>
 
 #include "key.h"
 #include "openssl_cpp.h"
@@ -26,57 +29,67 @@ void checkBool(auto const &b, char const *name)
 };
 
 
-
-auto makePublicKey()
+namespace Keys
 {
-    auto publicKey  = OpenSSL::Key{EVP_PKEY_new()};
+    auto loadPublicKey(std::span<unsigned char const> const &bytes)
+    {
+        auto data           = bytes.data();
+        auto publicKey      = d2i_PUBKEY( nullptr, &data, static_cast<long>(bytes.size()));
 
-    checkBool(publicKey,"EVP_PKEY_new");
+        checkBool(publicKey,"d2i_PUBKEY");
 
-    auto result     = EVP_PKEY_set_type(publicKey.get(), EVP_PKEY_RSA);
+        return OpenSSL::Key{publicKey};
+    }
 
-    checkResult(result,"EVP_PKEY_set_type");
 
-    auto data       = rsaPublicKeyBytes.data();
-    auto key        = d2i_PublicKey(EVP_PKEY_RSA, std::out_ptr(publicKey), &data, static_cast<long>(rsaPublicKeyBytes.size()));
+    auto loadPrivateKey(int keyType, std::span<unsigned char const> const &bytes)
+    {
+        auto privateKey = OpenSSL::Key{EVP_PKEY_new()};
 
-    checkBool(key,"d2i_PublicKey");
+        checkBool(privateKey,"EVP_PKEY_new");
 
-    return publicKey;
+        auto result     = EVP_PKEY_set_type(privateKey.get(), keyType);
+
+        checkResult(result,"EVP_PKEY_set_type");
+
+        auto data       = bytes.data();
+        auto key        = d2i_PrivateKey(keyType, std::out_ptr(privateKey), &data, static_cast<long>(bytes.size()));
+
+        checkBool(key,"d2i_PrivateKey");
+
+        return privateKey;
+    }
+
+
+    namespace RSA
+    {
+        auto load()
+        {
+            return std::make_pair(loadPublicKey(rsaPublicKeyBytes),loadPrivateKey(EVP_PKEY_RSA,rsaPrivateKeyBytes));
+        }
+    }
+
+    namespace EC
+    {
+        auto load()
+        {
+            return std::make_pair(loadPublicKey(ecPublicKeyBytes),loadPrivateKey(EVP_PKEY_EC,ecPrivateKeyBytes));
+        }
+    }
 }
 
 
-auto makePrivateKey()
+auto sign(OpenSSL::Key const &privateKey, std::string_view message)
 {
-    auto privateKey = OpenSSL::Key{EVP_PKEY_new()};
-
-    checkBool(privateKey,"EVP_PKEY_new");
-
-    auto result     = EVP_PKEY_set_type(privateKey.get(), EVP_PKEY_RSA);
-
-    checkResult(result,"EVP_PKEY_set_type");
-
-    auto data       = rsaPrivateKeyBytes.data();
-    auto key        = d2i_PrivateKey(EVP_PKEY_RSA, std::out_ptr(privateKey), &data, static_cast<long>(rsaPrivateKeyBytes.size()));
-
-    checkBool(key,"d2i_PrivateKey");
-
-    return privateKey;
-}
-
-
-
-auto sign(std::string_view message)
-{
-    auto privateKey = makePrivateKey();
-
-    checkBool(privateKey,"makePrivateKey");
-
     auto context    = OpenSSL::DigestContext{EVP_MD_CTX_new()};
  
     checkBool(context,"EVP_MD_CTX_new");
 
-    auto result     = EVP_DigestSignInit(context.get(), nullptr, EVP_sha256(), nullptr, privateKey.get());
+    auto result     = EVP_MD_CTX_init(context.get());
+
+    checkResult(result,"EVP_MD_CTX_init");
+
+    result          = EVP_DigestSignInit(context.get(), nullptr, EVP_sha256(), nullptr, privateKey.get());
  
     checkResult(result,"EVP_DigestSignInit");
 
@@ -95,22 +108,23 @@ auto sign(std::string_view message)
 
     checkResult(result,"EVP_DigestSignFinal");
 
+    signature.resize(sigLen);              // could've shrunk
+    
     return signature;
-
 }
 
 
-void verify(std::string_view message, std::vector<unsigned char> const &signature)
+bool verify(OpenSSL::Key const &publicKey, std::vector<unsigned char> const &signature, std::string_view message )
 {
-    auto publicKey  = makePublicKey();
-
-    checkBool(publicKey,"makePublicKey");
-
     auto context    = OpenSSL::DigestContext{EVP_MD_CTX_new()};
 
     checkBool(context,"EVP_MD_CTX_new");
 
-    auto result     = EVP_DigestVerifyInit(context.get(), nullptr, EVP_sha256(), nullptr, publicKey.get());
+    auto result     = EVP_MD_CTX_init(context.get());
+
+    checkResult(result,"EVP_MD_CTX_init");
+
+    result          = EVP_DigestVerifyInit(context.get(), nullptr, EVP_sha256(), nullptr, publicKey.get());
 
     checkResult(result,"EVP_DigestVerifyInit");
 
@@ -120,11 +134,23 @@ void verify(std::string_view message, std::vector<unsigned char> const &signatur
 
     result          = EVP_DigestVerifyFinal(context.get(), signature.data(), signature.size());
 
-    checkResult(result,"EVP_DigestVerifyFinal");
+    if(result == 1)
+    {
+        return true;
+    }
+    else if(result == 0)
+    {
+        return false;
+    }
+    else
+    {
+        std::print("{} ",result);
+        throw OpenSSL::openssl_error{"EVP_DigestVerifyFinal"};
+    }
 }
 
 
-int main()
+void go(std::pair<OpenSSL::Key,OpenSSL::Key> const &keys)
 try
 {
     auto correct = "'Twas brillig, and the slithy toves";
@@ -132,21 +158,38 @@ try
 
  //---
  
-    auto const signature = sign(correct);
+    auto const signature = sign(keys.second, correct);
 
     std::print("Signature Size - {}\n",signature.size());
  
  //---
 
-    std::print("{}\n",correct);
-    verify(correct,signature);
-
-
-    std::print("{}\n",wrong);
-    verify(wrong,signature);
+    std::print("{} : {}\n",correct,verify(keys.first,signature,correct));
+    std::print("{} : {}\n",wrong,  verify(keys.first,signature,wrong));
 
 }
 catch(std::exception const &e)
 {
-    std::print("Caught : {}\n",e.what());
+    std::print("{} : {}\n",__func__,e.what());
+}
+
+
+
+int main()
+try
+{
+    auto rsaKeys = Keys::RSA::load();
+    auto ecKeys  = Keys::EC::load();
+
+    std::print("\nEC\n");
+    go(ecKeys);
+
+    std::print("\nRSA\n");
+    go(rsaKeys);
+
+
+}
+catch(std::exception const &e)
+{
+    std::print("{} : {}\n",__func__,e.what());
 }
