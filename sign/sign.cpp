@@ -1,5 +1,6 @@
 #include <print>
 #include <vector>
+#include <span>
 
 #include <openssl/evp.h>
 #include <openssl/rsa.h>
@@ -28,118 +29,76 @@ void checkBool(auto const &b, char const *name)
 };
 
 
-namespace RSAKeys
+
+auto loadPublicKey(std::span<unsigned char const> const &bytes)
 {
-    auto makePublicKey()
-    {
-        auto publicKey  = OpenSSL::Key{EVP_PKEY_new()};
+    auto publicKey  = OpenSSL::Key{EVP_PKEY_new()};
 
-        checkBool(publicKey,"EVP_PKEY_new");
+    checkBool(publicKey,"EVP_PKEY_new");
 
-        auto result     = EVP_PKEY_set_type(publicKey.get(), EVP_PKEY_RSA);
+    auto data       = bytes.data();
+    auto key        = d2i_PUBKEY( std::out_ptr(publicKey), &data, static_cast<long>(bytes.size()));
 
-        checkResult(result,"EVP_PKEY_set_type");
+    checkBool(key,"d2i_PUBKEY");
 
-        auto data       = rsaPublicKeyBytes.data();
-        auto key        = d2i_PublicKey(EVP_PKEY_RSA, std::out_ptr(publicKey), &data, static_cast<long>(rsaPublicKeyBytes.size()));
+    return publicKey;
+}
 
-        checkBool(key,"d2i_PublicKey");
 
-        return publicKey;
-    }
-
-    auto makePrivateKey()
-    {
+auto loadPrivateKey(int keyType, std::span<unsigned char const> const &bytes)
+{
         auto privateKey = OpenSSL::Key{EVP_PKEY_new()};
 
         checkBool(privateKey,"EVP_PKEY_new");
 
-        auto result     = EVP_PKEY_set_type(privateKey.get(), EVP_PKEY_RSA);
+        auto result     = EVP_PKEY_set_type(privateKey.get(), keyType);
 
         checkResult(result,"EVP_PKEY_set_type");
 
-        auto data       = rsaPrivateKeyBytes.data();
-        auto key        = d2i_PrivateKey(EVP_PKEY_RSA, std::out_ptr(privateKey), &data, static_cast<long>(rsaPrivateKeyBytes.size()));
+        auto data       = bytes.data();
+        auto key        = d2i_PrivateKey(keyType, std::out_ptr(privateKey), &data, static_cast<long>(bytes.size()));
 
         checkBool(key,"d2i_PrivateKey");
 
         return privateKey;
+}
+
+
+
+namespace RSAKeys
+{
+    auto loadPublicKey()
+    {
+        return ::loadPublicKey(rsaPublicKeyBytes);
     }
 
-    auto makeKeys()
+    auto loadPrivateKey()
     {
-        return std::make_pair(makePublicKey(),makePrivateKey());
+        return ::loadPrivateKey(EVP_PKEY_RSA,rsaPrivateKeyBytes);
+    }
+
+    auto loadKeys()
+    {
+        return std::make_pair(loadPublicKey(),loadPrivateKey());
     }
 }
 
 
 namespace ECKeys
 {
-    auto makePublicKey()
+    auto loadPublicKey()
     {
-        auto publicKey  = OpenSSL::Key{EVP_PKEY_new()};
-
-        checkBool(publicKey,"EVP_PKEY_new");
-    
-        auto nid = NID_X9_62_prime256v1; // change to the curve you used
-
-        auto group = EC_GROUP_new_by_curve_name(nid);
-        checkBool(group,"EC_GROUP_new_by_curve_name");
-
-        auto eckey = OpenSSL::Key{EVP_PKEY_new()};
-        checkBool(eckey,"EC_KEY_new");
-
-        checkBool(EC_KEY_set_group(eckey.get(), group),"EC_KEY_set_group");
-
-        auto point = EC_POINT_new(group);
-        checkBool(point,"EC_POINT_new");
-
-        if(1 != EC_POINT_oct2point(group, point, ecPublicKeyBytes.data(), ecPublicKeyBytes.size(), nullptr))
-            throw OpenSSL::openssl_error{"EC_POINT_oct2point"};
-
-
-
-
-        checkBool(EC_KEY_set_public_key(eckey, point),"EC_KEY_set_public_key");
-
-        // create a temp EVP_PKEY and copy the EC_KEY into it (increments ref)
-        auto tmpPkey = OpenSSL::Key{EVP_PKEY_new()};
-        checkBool(tmpPkey,"EVP_PKEY_new");
-
-        if(1 != EVP_PKEY_set1_EC_KEY(tmpPkey.get(), eckey))
-            throw OpenSSL::openssl_error{"EVP_PKEY_set1_EC_KEY"};
-
-        // cleanup EC structures we created (EVP_PKEY has its own reference)
-        EC_POINT_free(point);
-        EC_KEY_free(eckey);
-        EC_GROUP_free(group);
-
-
-
-        return tmpPkey;
+        return ::loadPublicKey(ecPublicKeyBytes);
     }
 
-    auto makePrivateKey()
+    auto loadPrivateKey()
     {
-        auto privateKey = OpenSSL::Key{EVP_PKEY_new()};
-
-        checkBool(privateKey,"EVP_PKEY_new");
-
-        auto result     = EVP_PKEY_set_type(privateKey.get(), EVP_PKEY_EC);
-
-        checkResult(result,"EVP_PKEY_set_type");
-
-        auto data       = ecPrivateKeyBytes.data();
-        auto key        = d2i_PrivateKey(EVP_PKEY_EC, std::out_ptr(privateKey), &data, static_cast<long>(ecPrivateKeyBytes.size()));
-
-        checkBool(key,"d2i_PrivateKey");
-
-        return privateKey;
+        return ::loadPrivateKey(EVP_PKEY_EC,ecPrivateKeyBytes);
     }
 
-    auto makeKeys()
+    auto loadKeys()
     {
-        return std::make_pair(makePublicKey(),makePrivateKey());
+        return std::make_pair(loadPublicKey(),loadPrivateKey());
     }
 }
 
@@ -226,8 +185,8 @@ catch(std::exception const &e)
 int main()
 try
 {
-    auto rsaKeys = RSAKeys::makeKeys();
-    auto ecKeys  = ECKeys::makeKeys();
+    auto rsaKeys = RSAKeys::loadKeys();
+    auto ecKeys  = ECKeys::loadKeys();
 
     std::print("\nRSA\n");
     go(rsaKeys);

@@ -4,6 +4,7 @@
 #include "openssl_cpp.h"
 #include <openssl/rsa.h>
 #include <openssl/ec.h>
+#include <openssl/x509.h>
 
 
 void checkResult(int result, char const *name)
@@ -48,16 +49,16 @@ void write(std::string const &prefix, OpenSSL::Key const &key)
 {
 // --- write public
     {
-        auto publicKeyLen   = i2d_PublicKey(key.get(),nullptr);
+        auto publicKeyLen   = i2d_PUBKEY(key.get(),nullptr);
 
-        checkResult(publicKeyLen,"i2d_PublicKey");
+        checkResult(publicKeyLen,"i2d_PUBKEY");
 
         auto publicKey      = std::vector<unsigned char>(publicKeyLen, 0);
         auto data           = publicKey.data();
 
-        publicKeyLen        = i2d_PublicKey(key.get(),&data);
+        publicKeyLen        = i2d_PUBKEY(key.get(),&data);
 
-        checkResult(publicKeyLen,"i2d_PublicKey");
+        checkResult(publicKeyLen,"i2d_PUBKEY");
 
         write(prefix + "PublicKey", publicKey);
     }
