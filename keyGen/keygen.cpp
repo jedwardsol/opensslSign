@@ -97,6 +97,9 @@ void genRSA()
   
     checkResult(result,"EVP_PKEY_CTX_set_rsa_keygen_bits");
 
+//
+// ---
+//
 
     auto key        = OpenSSL::Key{};
 
@@ -122,6 +125,10 @@ void genEC()
     result = EVP_PKEY_CTX_set_ec_paramgen_curve_nid(keyContext.get(), NID_X9_62_prime256v1);
     
     checkResult(result,"EVP_PKEY_CTX_set_ec_paramgen_curve_nid");
+
+//
+// ---
+//
 
     auto key        = OpenSSL::Key{};
 
