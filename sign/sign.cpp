@@ -37,8 +37,8 @@ auto makePublicKey()
 
     checkResult(result,"EVP_PKEY_set_type");
 
-    auto data       = publicKeyBytes.data();
-    auto key        = d2i_PublicKey(EVP_PKEY_RSA, std::out_ptr(publicKey), &data, static_cast<long>(publicKeyBytes.size()));
+    auto data       = rsaPublicKeyBytes.data();
+    auto key        = d2i_PublicKey(EVP_PKEY_RSA, std::out_ptr(publicKey), &data, static_cast<long>(rsaPublicKeyBytes.size()));
 
     checkBool(key,"d2i_PublicKey");
 
@@ -56,8 +56,8 @@ auto makePrivateKey()
 
     checkResult(result,"EVP_PKEY_set_type");
 
-    auto data       = privateKeyBytes.data();
-    auto key        = d2i_PrivateKey(EVP_PKEY_RSA, std::out_ptr(privateKey), &data, static_cast<long>(privateKeyBytes.size()));
+    auto data       = rsaPrivateKeyBytes.data();
+    auto key        = d2i_PrivateKey(EVP_PKEY_RSA, std::out_ptr(privateKey), &data, static_cast<long>(rsaPrivateKeyBytes.size()));
 
     checkBool(key,"d2i_PrivateKey");
 
@@ -133,6 +133,8 @@ try
  //---
  
     auto const signature = sign(correct);
+
+    std::print("Signature Size - {}\n",signature.size());
  
  //---
 

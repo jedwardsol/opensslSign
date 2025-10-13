@@ -6,7 +6,6 @@
 
 #include <openssl/err.h>
 #include <openssl/evp.h>
-#include <openssl/rsa.h>
 #include <openssl/core_names.h>
 
 
