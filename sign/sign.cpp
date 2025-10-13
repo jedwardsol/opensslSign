@@ -3,7 +3,9 @@
 
 #include <openssl/evp.h>
 #include <openssl/rsa.h>
+#include <openssl/ec.h>
 #include <openssl/core_names.h>
+#include <openssl/x509.h>
 
 #include "key.h"
 #include "openssl_cpp.h"
@@ -26,52 +28,125 @@ void checkBool(auto const &b, char const *name)
 };
 
 
-
-auto makePublicKey()
+namespace RSAKeys
 {
-    auto publicKey  = OpenSSL::Key{EVP_PKEY_new()};
+    auto makePublicKey()
+    {
+        auto publicKey  = OpenSSL::Key{EVP_PKEY_new()};
 
-    checkBool(publicKey,"EVP_PKEY_new");
+        checkBool(publicKey,"EVP_PKEY_new");
 
-    auto result     = EVP_PKEY_set_type(publicKey.get(), EVP_PKEY_RSA);
+        auto result     = EVP_PKEY_set_type(publicKey.get(), EVP_PKEY_RSA);
 
-    checkResult(result,"EVP_PKEY_set_type");
+        checkResult(result,"EVP_PKEY_set_type");
 
-    auto data       = rsaPublicKeyBytes.data();
-    auto key        = d2i_PublicKey(EVP_PKEY_RSA, std::out_ptr(publicKey), &data, static_cast<long>(rsaPublicKeyBytes.size()));
+        auto data       = rsaPublicKeyBytes.data();
+        auto key        = d2i_PublicKey(EVP_PKEY_RSA, std::out_ptr(publicKey), &data, static_cast<long>(rsaPublicKeyBytes.size()));
 
-    checkBool(key,"d2i_PublicKey");
+        checkBool(key,"d2i_PublicKey");
 
-    return publicKey;
+        return publicKey;
+    }
+
+    auto makePrivateKey()
+    {
+        auto privateKey = OpenSSL::Key{EVP_PKEY_new()};
+
+        checkBool(privateKey,"EVP_PKEY_new");
+
+        auto result     = EVP_PKEY_set_type(privateKey.get(), EVP_PKEY_RSA);
+
+        checkResult(result,"EVP_PKEY_set_type");
+
+        auto data       = rsaPrivateKeyBytes.data();
+        auto key        = d2i_PrivateKey(EVP_PKEY_RSA, std::out_ptr(privateKey), &data, static_cast<long>(rsaPrivateKeyBytes.size()));
+
+        checkBool(key,"d2i_PrivateKey");
+
+        return privateKey;
+    }
+
+    auto makeKeys()
+    {
+        return std::make_pair(makePublicKey(),makePrivateKey());
+    }
 }
 
 
-auto makePrivateKey()
+namespace ECKeys
 {
-    auto privateKey = OpenSSL::Key{EVP_PKEY_new()};
+    auto makePublicKey()
+    {
+        auto publicKey  = OpenSSL::Key{EVP_PKEY_new()};
 
-    checkBool(privateKey,"EVP_PKEY_new");
+        checkBool(publicKey,"EVP_PKEY_new");
+    
+        auto nid = NID_X9_62_prime256v1; // change to the curve you used
 
-    auto result     = EVP_PKEY_set_type(privateKey.get(), EVP_PKEY_RSA);
+        auto group = EC_GROUP_new_by_curve_name(nid);
+        checkBool(group,"EC_GROUP_new_by_curve_name");
 
-    checkResult(result,"EVP_PKEY_set_type");
+        auto eckey = OpenSSL::Key{EVP_PKEY_new()};
+        checkBool(eckey,"EC_KEY_new");
 
-    auto data       = rsaPrivateKeyBytes.data();
-    auto key        = d2i_PrivateKey(EVP_PKEY_RSA, std::out_ptr(privateKey), &data, static_cast<long>(rsaPrivateKeyBytes.size()));
+        checkBool(EC_KEY_set_group(eckey.get(), group),"EC_KEY_set_group");
 
-    checkBool(key,"d2i_PrivateKey");
+        auto point = EC_POINT_new(group);
+        checkBool(point,"EC_POINT_new");
 
-    return privateKey;
+        if(1 != EC_POINT_oct2point(group, point, ecPublicKeyBytes.data(), ecPublicKeyBytes.size(), nullptr))
+            throw OpenSSL::openssl_error{"EC_POINT_oct2point"};
+
+
+
+
+        checkBool(EC_KEY_set_public_key(eckey, point),"EC_KEY_set_public_key");
+
+        // create a temp EVP_PKEY and copy the EC_KEY into it (increments ref)
+        auto tmpPkey = OpenSSL::Key{EVP_PKEY_new()};
+        checkBool(tmpPkey,"EVP_PKEY_new");
+
+        if(1 != EVP_PKEY_set1_EC_KEY(tmpPkey.get(), eckey))
+            throw OpenSSL::openssl_error{"EVP_PKEY_set1_EC_KEY"};
+
+        // cleanup EC structures we created (EVP_PKEY has its own reference)
+        EC_POINT_free(point);
+        EC_KEY_free(eckey);
+        EC_GROUP_free(group);
+
+
+
+        return tmpPkey;
+    }
+
+    auto makePrivateKey()
+    {
+        auto privateKey = OpenSSL::Key{EVP_PKEY_new()};
+
+        checkBool(privateKey,"EVP_PKEY_new");
+
+        auto result     = EVP_PKEY_set_type(privateKey.get(), EVP_PKEY_EC);
+
+        checkResult(result,"EVP_PKEY_set_type");
+
+        auto data       = ecPrivateKeyBytes.data();
+        auto key        = d2i_PrivateKey(EVP_PKEY_EC, std::out_ptr(privateKey), &data, static_cast<long>(ecPrivateKeyBytes.size()));
+
+        checkBool(key,"d2i_PrivateKey");
+
+        return privateKey;
+    }
+
+    auto makeKeys()
+    {
+        return std::make_pair(makePublicKey(),makePrivateKey());
+    }
 }
 
 
 
-auto sign(std::string_view message)
+auto sign(OpenSSL::Key const &privateKey, std::string_view message)
 {
-    auto privateKey = makePrivateKey();
-
-    checkBool(privateKey,"makePrivateKey");
-
     auto context    = OpenSSL::DigestContext{EVP_MD_CTX_new()};
  
     checkBool(context,"EVP_MD_CTX_new");
@@ -96,16 +171,11 @@ auto sign(std::string_view message)
     checkResult(result,"EVP_DigestSignFinal");
 
     return signature;
-
 }
 
 
-void verify(std::string_view message, std::vector<unsigned char> const &signature)
+void verify(OpenSSL::Key const &publicKey, std::vector<unsigned char> const &signature, std::string_view message )
 {
-    auto publicKey  = makePublicKey();
-
-    checkBool(publicKey,"makePublicKey");
-
     auto context    = OpenSSL::DigestContext{EVP_MD_CTX_new()};
 
     checkBool(context,"EVP_MD_CTX_new");
@@ -124,7 +194,7 @@ void verify(std::string_view message, std::vector<unsigned char> const &signatur
 }
 
 
-int main()
+void go(std::pair<OpenSSL::Key,OpenSSL::Key> const &keys)
 try
 {
     auto correct = "'Twas brillig, and the slithy toves";
@@ -132,21 +202,41 @@ try
 
  //---
  
-    auto const signature = sign(correct);
+    auto const signature = sign(keys.second, correct);
 
     std::print("Signature Size - {}\n",signature.size());
  
  //---
 
     std::print("{}\n",correct);
-    verify(correct,signature);
-
+    verify(keys.first,signature,correct);
+    std::print("verified\n");
 
     std::print("{}\n",wrong);
-    verify(wrong,signature);
+    verify(keys.first,signature,wrong);
+    std::print("verified\n");
+}
+catch(std::exception const &e)
+{
+    std::print("{} : {}\n",__func__,e.what());
+}
+
+
+
+int main()
+try
+{
+    auto rsaKeys = RSAKeys::makeKeys();
+    auto ecKeys  = ECKeys::makeKeys();
+
+    std::print("\nRSA\n");
+    go(rsaKeys);
+
+    std::print("\nEC\n");
+    go(ecKeys);
 
 }
 catch(std::exception const &e)
 {
-    std::print("Caught : {}\n",e.what());
+    std::print("{} : {}\n",__func__,e.what());
 }
