@@ -52,7 +52,7 @@ EC25519
 
 To verify the internet's assertions about verification speed
 
-Run x64\Release\signTimings which signs a 40Kb message and then verifies it 100,000 times    (EVM content is 40Kb uncompressed,  6Kb compressed)
+Run x64\Release\signTimings which signs a 40Kb message and then verifies it 100,000 times.
 
     OpenSSL Version: OpenSSL 3.5.2 5 Aug 2025
 
