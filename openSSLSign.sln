@@ -6,12 +6,22 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "keyGen", "keyGen\keyGen.vcxproj", "{10EEAE02-1680-44F5-8887-F9BA5217974A}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sign", "sign\sign.vcxproj", "{D72A151D-ACE2-4ED0-BEB9-24CE6A847E96}"
+	ProjectSection(ProjectDependencies) = postProject
+		{20ED0B76-BF58-4AFA-9166-43C378E9329C} = {20ED0B76-BF58-4AFA-9166-43C378E9329C}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
 	ProjectSection(SolutionItems) = preProject
-		key.h = key.h
 		openssl_cpp.h = openssl_cpp.h
+		README.md = README.md
 	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "signTimings", "signTimings\signTimings.vcxproj", "{89EA512F-421D-424E-BE07-BD6A3AC23026}"
+	ProjectSection(ProjectDependencies) = postProject
+		{20ED0B76-BF58-4AFA-9166-43C378E9329C} = {20ED0B76-BF58-4AFA-9166-43C378E9329C}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libSign", "libSign\libSign.vcxproj", "{20ED0B76-BF58-4AFA-9166-43C378E9329C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -37,6 +47,22 @@ Global
 		{D72A151D-ACE2-4ED0-BEB9-24CE6A847E96}.Release|x64.Build.0 = Release|x64
 		{D72A151D-ACE2-4ED0-BEB9-24CE6A847E96}.Release|x86.ActiveCfg = Release|Win32
 		{D72A151D-ACE2-4ED0-BEB9-24CE6A847E96}.Release|x86.Build.0 = Release|Win32
+		{89EA512F-421D-424E-BE07-BD6A3AC23026}.Debug|x64.ActiveCfg = Debug|x64
+		{89EA512F-421D-424E-BE07-BD6A3AC23026}.Debug|x64.Build.0 = Debug|x64
+		{89EA512F-421D-424E-BE07-BD6A3AC23026}.Debug|x86.ActiveCfg = Debug|Win32
+		{89EA512F-421D-424E-BE07-BD6A3AC23026}.Debug|x86.Build.0 = Debug|Win32
+		{89EA512F-421D-424E-BE07-BD6A3AC23026}.Release|x64.ActiveCfg = Release|x64
+		{89EA512F-421D-424E-BE07-BD6A3AC23026}.Release|x64.Build.0 = Release|x64
+		{89EA512F-421D-424E-BE07-BD6A3AC23026}.Release|x86.ActiveCfg = Release|Win32
+		{89EA512F-421D-424E-BE07-BD6A3AC23026}.Release|x86.Build.0 = Release|Win32
+		{20ED0B76-BF58-4AFA-9166-43C378E9329C}.Debug|x64.ActiveCfg = Debug|x64
+		{20ED0B76-BF58-4AFA-9166-43C378E9329C}.Debug|x64.Build.0 = Debug|x64
+		{20ED0B76-BF58-4AFA-9166-43C378E9329C}.Debug|x86.ActiveCfg = Debug|Win32
+		{20ED0B76-BF58-4AFA-9166-43C378E9329C}.Debug|x86.Build.0 = Debug|Win32
+		{20ED0B76-BF58-4AFA-9166-43C378E9329C}.Release|x64.ActiveCfg = Release|x64
+		{20ED0B76-BF58-4AFA-9166-43C378E9329C}.Release|x64.Build.0 = Release|x64
+		{20ED0B76-BF58-4AFA-9166-43C378E9329C}.Release|x86.ActiveCfg = Release|Win32
+		{20ED0B76-BF58-4AFA-9166-43C378E9329C}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

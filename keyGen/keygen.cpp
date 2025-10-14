@@ -7,32 +7,17 @@
 #include <openssl/x509.h>
 
 
-void checkResult(int result, char const *name)
+// makes RSA and EC key pairs and writes them to stdout,  for redirecting to a keys.h
+
+
+
+void write(std::string const &name, std::vector<uint8_t> const &data)
 {
-    if(result <= 0)
-    {
-        throw OpenSSL::openssl_error{name};
-    }
-};
-
-void checkBool(auto const &b, char const *name)
-{
-    if(!b)
-    {
-        throw OpenSSL::openssl_error{name};
-    }
-};
-
-
-
-
-void write(std::string const &name, std::vector<unsigned char> const &data)
-{
-    std::print("auto {}Bytes = std::array<unsigned char const,{}>\n{{",name, data.size());
+    std::print("constinit auto const {}Bytes = std::array<uint8_t const ,{}>\n{{",name, data.size());
 
     for(int i=0;i < data.size(); i++)
     {
-        if((i%32) == 0)
+        if((i%16) == 0)
         {
             std::print("\n    ");
         }
@@ -51,14 +36,14 @@ void write(std::string const &prefix, OpenSSL::Key const &key)
     {
         auto publicKeyLen   = i2d_PUBKEY(key.get(),nullptr);
 
-        checkResult(publicKeyLen,"i2d_PUBKEY");
+        OpenSSL::checkResult(publicKeyLen,"i2d_PUBKEY");
 
-        auto publicKey      = std::vector<unsigned char>(publicKeyLen, 0);
+        auto publicKey      = std::vector<uint8_t>(publicKeyLen, 0);
         auto data           = publicKey.data();
 
         publicKeyLen        = i2d_PUBKEY(key.get(),&data);
 
-        checkResult(publicKeyLen,"i2d_PUBKEY");
+        OpenSSL::checkResult(publicKeyLen,"i2d_PUBKEY");
 
         write(prefix + "PublicKey", publicKey);
     }
@@ -67,14 +52,14 @@ void write(std::string const &prefix, OpenSSL::Key const &key)
     {
         auto privateKeyLen  = i2d_PrivateKey(key.get(),nullptr);
 
-        checkResult(privateKeyLen,"i2d_PrivateKey");
+        OpenSSL::checkResult(privateKeyLen,"i2d_PrivateKey");
 
-        auto privateKey     = std::vector<unsigned char>(privateKeyLen, 0);
+        auto privateKey     = std::vector<uint8_t>(privateKeyLen, 0);
         auto data           = privateKey.data();
 
         privateKeyLen       = i2d_PrivateKey(key.get(),&data);
 
-        checkResult(privateKeyLen,"i2d_PrivateKey");
+        OpenSSL::checkResult(privateKeyLen,"i2d_PrivateKey");
 
         write(prefix + "PrivateKey", privateKey);
     }
@@ -91,11 +76,11 @@ void genRSA()
 
     auto result     = EVP_PKEY_keygen_init(keyContext.get());
 
-    checkResult(result,"EVP_PKEY_keygen_init");
+    OpenSSL::checkResult(result,"EVP_PKEY_keygen_init");
 
     result          = EVP_PKEY_CTX_set_rsa_keygen_bits(keyContext.get(), 2048);
   
-    checkResult(result,"EVP_PKEY_CTX_set_rsa_keygen_bits");
+    OpenSSL::checkResult(result,"EVP_PKEY_CTX_set_rsa_keygen_bits");
 
 //
 // ---
@@ -105,26 +90,26 @@ void genRSA()
 
     result          = EVP_PKEY_keygen(keyContext.get(), std::out_ptr(key));
 
-    checkResult(result,"EVP_PKEY_keygen");
+    OpenSSL::checkResult(result,"EVP_PKEY_keygen");
 
     write("rsa",key);
 }
 
 
-void genEC()
+void genEC256()
 {
     auto keyContext = OpenSSL::KeyContext{EVP_PKEY_CTX_new_id(EVP_PKEY_EC, nullptr)};
 
-    checkBool(keyContext,"EVP_PKEY_CTX_new_id");
+    OpenSSL::checkBool(keyContext,"EVP_PKEY_CTX_new_id");
 
 
     auto result     = EVP_PKEY_keygen_init(keyContext.get());
 
-    checkResult(result,"EVP_PKEY_keygen_init");
+    OpenSSL::checkResult(result,"EVP_PKEY_keygen_init");
 
     result = EVP_PKEY_CTX_set_ec_paramgen_curve_nid(keyContext.get(), NID_X9_62_prime256v1);
     
-    checkResult(result,"EVP_PKEY_CTX_set_ec_paramgen_curve_nid");
+    OpenSSL::checkResult(result,"EVP_PKEY_CTX_set_ec_paramgen_curve_nid");
 
 //
 // ---
@@ -134,9 +119,36 @@ void genEC()
 
     result          = EVP_PKEY_keygen(keyContext.get(), std::out_ptr(key));
 
-    checkResult(result,"EVP_PKEY_keygen");
+    OpenSSL::checkResult(result,"EVP_PKEY_keygen");
 
-    write("ec",key);
+    write("ec256",key);
+}
+
+
+
+void genEC25519()
+{
+    auto keyContext = OpenSSL::KeyContext{EVP_PKEY_CTX_new_id(NID_ED25519, nullptr)};
+
+    OpenSSL::checkBool(keyContext,"EVP_PKEY_CTX_new_id");
+
+
+    auto result     = EVP_PKEY_keygen_init(keyContext.get());
+
+    OpenSSL::checkResult(result,"EVP_PKEY_keygen_init");
+
+
+//
+// ---
+//
+
+    auto key        = OpenSSL::Key{};
+
+    result          = EVP_PKEY_keygen(keyContext.get(), std::out_ptr(key));
+
+    OpenSSL::checkResult(result,"EVP_PKEY_keygen");
+
+    write("ec25519",key);
 }
 
 
@@ -145,13 +157,21 @@ void genEC()
 int main()
 try
 {
-    std::print("#pragma once\n");
-    std::print("// generated with the `keygen` program\n");
-    std::print("#include <array>\n\n");
+    std::puts(R"(
+#pragma once
+// generated with the `keygen` program
+#include <array>
+#include <cstdint>
+
+namespace Keys
+{
+    )");
 
     genRSA();
-    genEC();
+    genEC256();
+    genEC25519();
 
+    std::puts("\n}\n");
 }
 catch(std::exception const &e)
 {

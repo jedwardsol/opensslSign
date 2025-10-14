@@ -11,27 +11,43 @@
 #include "openssl_cpp.h"
 #include "libSign/libSign.h"
 
+#include <chrono>
+namespace chr = std::chrono;
+using Clock = chr::steady_clock;
+
+
+
+constexpr auto messageSize  = 40*1024;
+constexpr auto iterations   = 100'000;
+
 
 
 
 void go(LibSign::Funcs const &funcs)
 try
 {
-    auto correct = "'Twas brillig, and the slithy toves";
-    auto wrong   = "'Twas brillig, and the slithy taves";
+    auto string = std::string(messageSize,'J');
 
     //---
-
+ 
     auto const keys         = funcs.loader();
- 
-    auto const signature    = funcs.signer(keys.second, LibSign::AsMessage(correct));
-
-    std::print("Signature Size - {}\n",signature.size());
+    auto const signature    = funcs.signer(keys.second, LibSign::AsMessage(string));
  
     //---
 
-    std::print("{} : {}\n",correct,funcs.verifier(keys.first,signature,LibSign::AsMessage(correct)));
-    std::print("{} : {}\n",wrong,  funcs.verifier(keys.first,signature,LibSign::AsMessage(wrong)));
+    auto start = Clock::now();
+
+    for(int i=0;i<iterations;i++)
+    {
+        auto verified = funcs.verifier(keys.first,signature,LibSign::AsMessage(string));
+            
+        OpenSSL::checkBool(verified,"verification");
+
+    }
+
+    auto end = Clock::now();
+
+    std::print("{} verifications of {} bytes in {}\n",iterations,messageSize,chr::duration_cast<chr::seconds>(end-start));
 
 }
 catch(std::exception const &e)

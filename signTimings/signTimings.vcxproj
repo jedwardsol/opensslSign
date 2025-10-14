@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{d72a151d-ace2-4ed0-beb9-24ce6a847e96}</ProjectGuid>
-    <RootNamespace>sign</RootNamespace>
+    <ProjectGuid>{89EA512F-421D-424E-BE07-BD6A3AC23026}</ProjectGuid>
+    <RootNamespace>signTimings</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -140,7 +140,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="sign.cpp" />
+    <ClCompile Include="signTimings.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

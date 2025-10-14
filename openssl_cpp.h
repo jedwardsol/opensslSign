@@ -3,6 +3,7 @@
 #include <memory>
 #include <exception>
 #include <string>   
+#include <utility>
 
 #include <openssl/err.h>
 #include <openssl/evp.h>
@@ -38,6 +39,11 @@ namespace OpenSSL
     using KeyContext    = std::unique_ptr<EVP_PKEY_CTX, KeyContextDeleter>;
     using DigestContext = std::unique_ptr<EVP_MD_CTX,   DigestContextDeleter>;
     using Key           = std::unique_ptr<EVP_PKEY,     KeyDeleter>;
+    using PublicKey     = Key;
+    using PrivateKey    = Key;
+    using KeyPair       = std::pair<PublicKey,PrivateKey>; 
+
+
 }
 
 
@@ -58,6 +64,26 @@ namespace OpenSSL
             return message;
         }
     };
+
+    inline
+    void checkResult(int result, char const *name)
+    {
+        if(result <= 0)
+        {
+            throw OpenSSL::openssl_error{name};
+        }
+    };
+
+    inline
+    void checkBool(auto const &b, char const *name)
+    {
+        if(!b)
+        {
+            throw OpenSSL::openssl_error{name};
+        }
+    };
+
+
 
 }
 
