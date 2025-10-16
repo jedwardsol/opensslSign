@@ -17,7 +17,7 @@ using Clock = chr::steady_clock;
 
 
 
-constexpr auto messageSize  = 40*1024;
+constexpr auto messageSize  = 10*1024;
 constexpr auto iterations   = 100'000;
 
 
@@ -30,8 +30,8 @@ try
 
     //---
  
-    auto const keys         = funcs.loader();
-    auto const signature    = funcs.signer(keys.second, LibSign::AsMessage(string));
+    auto const keys         = funcs.loadKeys();
+    auto const signature    = funcs.sign(keys.second, LibSign::AsMessage(string));
  
     //---
 
@@ -39,7 +39,7 @@ try
 
     for(int i=0;i<iterations;i++)
     {
-        auto verified = funcs.verifier(keys.first,signature,LibSign::AsMessage(string));
+        auto verified = funcs.verify(keys.first,signature,LibSign::AsMessage(string));
             
         OpenSSL::checkBool(verified,"verification");
 
@@ -69,8 +69,14 @@ try
     std::print("\nEC256\n");
     go(LibSign::EC256::funcs());
 
-    std::print("\nEC25519\n");
-    go(LibSign::EC25519::funcs());
+    std::print("\nED25519\n");
+    go(LibSign::ED25519::funcs());
+
+    std::print("\nDSA\n");
+    go(LibSign::DSA::funcs());
+
+    std::print("\nSLH-DSA\n");
+    go(LibSign::SLHDSA::funcs());
 }
 catch(std::exception const &e)
 {

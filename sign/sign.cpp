@@ -22,16 +22,16 @@ try
 
     //---
 
-    auto const keys         = funcs.loader();
+    auto const keys         = funcs.loadKeys();
  
-    auto const signature    = funcs.signer(keys.second, LibSign::AsMessage(correct));
+    auto const signature    = funcs.sign(keys.second, LibSign::AsMessage(correct));
 
     std::print("Signature Size - {}\n",signature.size());
  
     //---
 
-    std::print("{} : {}\n",correct,funcs.verifier(keys.first,signature,LibSign::AsMessage(correct)));
-    std::print("{} : {}\n",wrong,  funcs.verifier(keys.first,signature,LibSign::AsMessage(wrong)));
+    std::print("{} : {}\n",correct,funcs.verify(keys.first,signature,LibSign::AsMessage(correct)));
+    std::print("{} : {}\n",wrong,  funcs.verify(keys.first,signature,LibSign::AsMessage(wrong)));
 
 }
 catch(std::exception const &e)
@@ -53,8 +53,15 @@ try
     std::print("\nEC256\n");
     go(LibSign::EC256::funcs());
 
-    std::print("\nEC25519\n");
-    go(LibSign::EC25519::funcs());
+    std::print("\nED25519\n");
+    go(LibSign::ED25519::funcs());
+
+    std::print("\nDSA\n");
+    go(LibSign::DSA::funcs());
+
+    std::print("\nSLH-DSA\n");
+    go(LibSign::SLHDSA::funcs());
+
 }
 catch(std::exception const &e)
 {

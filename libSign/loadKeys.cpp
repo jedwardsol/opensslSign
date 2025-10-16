@@ -35,10 +35,6 @@ namespace LibSign
 
             checkBool(privateKey,"EVP_PKEY_new");
 
-            auto result     = EVP_PKEY_set_type(privateKey.get(), keyType);
-
-            OpenSSL::checkResult(result,"EVP_PKEY_set_type");
-
             auto data       = bytes.data();
             auto key        = d2i_PrivateKey(keyType, std::out_ptr(privateKey), &data, static_cast<long>(bytes.size()));
 
@@ -64,13 +60,31 @@ namespace LibSign
         }
     }
 
-    namespace EC25519
+    namespace ED25519
     {
         OpenSSL::KeyPair load()
         {
-            return std::make_pair(loadPublicKey(::Keys::ec25519PublicKeyBytes),loadPrivateKey(EVP_PKEY_ED25519,::Keys::ec25519PrivateKeyBytes));
+            return std::make_pair(loadPublicKey(::Keys::ed25519PublicKeyBytes),loadPrivateKey(EVP_PKEY_ED25519,::Keys::ed25519PrivateKeyBytes));
         }
     }
+
+    namespace DSA
+    {
+        OpenSSL::KeyPair load()
+        {
+            return std::make_pair(loadPublicKey(::Keys::dsaPublicKeyBytes),loadPrivateKey(EVP_PKEY_DSA,::Keys::dsaPrivateKeyBytes));
+        }
+    }
+
+    namespace SLHDSA
+    {
+        OpenSSL::KeyPair load()
+        {
+            return std::make_pair(loadPublicKey(::Keys::slhdsaPublicKeyBytes),loadPrivateKey(EVP_PKEY_SLH_DSA_SHAKE_128S,::Keys::slhdsaPrivateKeyBytes));
+        }
+    }
+
+
 }
 
 

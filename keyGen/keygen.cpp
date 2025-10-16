@@ -102,7 +102,6 @@ void genEC256()
 
     OpenSSL::checkBool(keyContext,"EVP_PKEY_CTX_new_id");
 
-
     auto result     = EVP_PKEY_keygen_init(keyContext.get());
 
     OpenSSL::checkResult(result,"EVP_PKEY_keygen_init");
@@ -126,12 +125,11 @@ void genEC256()
 
 
 
-void genEC25519()
+void genED25519()
 {
     auto keyContext = OpenSSL::KeyContext{EVP_PKEY_CTX_new_id(NID_ED25519, nullptr)};
 
     OpenSSL::checkBool(keyContext,"EVP_PKEY_CTX_new_id");
-
 
     auto result     = EVP_PKEY_keygen_init(keyContext.get());
 
@@ -148,7 +146,79 @@ void genEC25519()
 
     OpenSSL::checkResult(result,"EVP_PKEY_keygen");
 
-    write("ec25519",key);
+    write("ed25519",key);
+}
+
+
+void genDSA()
+{
+    auto paramContext = OpenSSL::KeyContext{EVP_PKEY_CTX_new_id(EVP_PKEY_DSA, nullptr)};
+
+    checkBool(paramContext,"EVP_PKEY_CTX_new_id");
+
+
+    auto result     = EVP_PKEY_paramgen_init(paramContext.get());
+
+    OpenSSL::checkResult(result,"EVP_PKEY_paramgen_init");
+
+    result          = EVP_PKEY_CTX_set_dsa_paramgen_bits(paramContext.get(), 2048);
+  
+    OpenSSL::checkResult(result,"EVP_PKEY_CTX_set_dsa_paramgen_bits");
+
+
+    auto keyParams  = OpenSSL::Key{};
+
+    EVP_PKEY_paramgen(paramContext.get(), std::out_ptr(keyParams));
+
+//
+// ---
+//
+
+    auto keyContext = OpenSSL::KeyContext{EVP_PKEY_CTX_new(keyParams.get(), nullptr)};
+
+    checkBool(keyContext,"EVP_PKEY_CTX_new");
+
+    result          = EVP_PKEY_keygen_init(keyContext.get());
+
+    OpenSSL::checkResult(result,"EVP_PKEY_keygen_init");
+
+//
+// ---
+//
+
+    auto key        = OpenSSL::Key{};
+
+    result          = EVP_PKEY_keygen(keyContext.get(), std::out_ptr(key));
+
+    OpenSSL::checkResult(result,"EVP_PKEY_keygen");
+
+    write("dsa",key);
+}
+
+
+
+void genSLHDSA()
+{
+    auto keyContext = OpenSSL::KeyContext{EVP_PKEY_CTX_new_id(EVP_PKEY_SLH_DSA_SHAKE_128S, nullptr)};
+
+    OpenSSL::checkBool(keyContext,"EVP_PKEY_CTX_new_id");
+
+    auto result     = EVP_PKEY_keygen_init(keyContext.get());
+
+    OpenSSL::checkResult(result,"EVP_PKEY_keygen_init");
+
+
+//
+// ---
+//
+
+    auto key        = OpenSSL::Key{};
+
+    result          = EVP_PKEY_keygen(keyContext.get(), std::out_ptr(key));
+
+    OpenSSL::checkResult(result,"EVP_PKEY_keygen");
+
+    write("slhdsa",key);
 }
 
 
@@ -169,7 +239,9 @@ namespace Keys
 
     genRSA();
     genEC256();
-    genEC25519();
+    genED25519();
+    genDSA();
+    genSLHDSA();
 
     std::puts("\n}\n");
 }

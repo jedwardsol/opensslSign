@@ -14,9 +14,9 @@
 
 namespace LibSign
 {
-    namespace RSA
+    namespace
     {
-        Signature sign(OpenSSL::PrivateKey const &privateKey, Message message)
+        Signature sign_sha256(OpenSSL::PrivateKey const &privateKey, Message message)
         {
             auto context    = OpenSSL::DigestContext{EVP_MD_CTX_new()};
  
@@ -49,24 +49,8 @@ namespace LibSign
     
             return signature;
         }
-    }
 
-
-    namespace EC256
-    {
-
-        Signature sign(OpenSSL::PrivateKey const &privateKey, Message message)
-        {
-            return RSA::sign(privateKey,message);
-        }
-    }
-
-
-
-    namespace EC25519
-    {
-
-        Signature sign(OpenSSL::PrivateKey const &privateKey, Message message)
+        Signature sign_default_algorithm(OpenSSL::PrivateKey const &privateKey, Message message)
         {
             auto context    = OpenSSL::DigestContext{EVP_MD_CTX_new()};
  
@@ -96,6 +80,54 @@ namespace LibSign
             signature.resize(sigLen);                                   // could've shrunk : happens when signing with an EC key
     
             return signature;
+        }
+    }
+
+
+    namespace RSA
+    {
+        Signature sign(OpenSSL::PrivateKey const &privateKey, Message message)
+        {
+            // documentation says that the algorthm must be specified when creating a signature with an RSA key
+            // although experimentation shows that `sign_default_algorithm` does work here.
+            return sign_sha256(privateKey,message);
+        }
+    }
+
+    namespace EC256
+    {
+
+        Signature sign(OpenSSL::PrivateKey const &privateKey, Message message)
+        {
+            // documentation says that the algorthm must be specified when creating a signature with this EC key
+            // although experimentation shows that `sign_default_algorithm` does work here.
+            return sign_sha256(privateKey,message);
+        }
+    }
+
+    namespace ED25519
+    {
+        Signature sign(OpenSSL::PrivateKey const &privateKey, Message message)
+        {
+            // documentation says that the algorthm must not be specified when creating signature with this EC key
+            // and experimentation does show that `sign_sha256` does not work here 
+            return sign_default_algorithm(privateKey,message);
+        }
+    }
+
+    namespace DSA
+    {
+        Signature sign(OpenSSL::PrivateKey const &privateKey, Message message)
+        {
+            return sign_sha256(privateKey,message);
+        }
+    }
+
+    namespace SLHDSA
+    {
+        Signature sign(OpenSSL::PrivateKey const &privateKey, Message message)
+        {
+            return sign_default_algorithm(privateKey,message);
         }
     }
 }

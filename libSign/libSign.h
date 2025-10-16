@@ -20,15 +20,15 @@ namespace LibSign
     }
 
 
-    using Loader   = std::function<OpenSSL::KeyPair()>;
-    using Signer   = std::function<Signature(OpenSSL::PrivateKey const &, Message)>;
-    using Verifier = std::function<bool(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message)>;
+    using KeyLoader   = std::function<OpenSSL::KeyPair()>;
+    using Signer     = std::function<Signature(OpenSSL::PrivateKey const &, Message)>;
+    using Verifier   = std::function<bool(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message)>;
 
     struct Funcs 
     {
-        Loader      loader;
-        Signer      signer;
-        Verifier    verifier;
+        KeyLoader   loadKeys;
+        Signer      sign;
+        Verifier    verify;
     };
 
 
@@ -50,7 +50,7 @@ namespace LibSign
         inline Funcs funcs() { return{load,sign,verify}; };
     }
 
-    namespace EC25519
+    namespace ED25519
     {
         OpenSSL::KeyPair load();
         Signature sign(OpenSSL::PrivateKey const &privateKey, Message message);      
@@ -58,6 +58,26 @@ namespace LibSign
 
         inline Funcs funcs() { return{load,sign,verify}; };
     }
+
+    namespace DSA
+    {
+        OpenSSL::KeyPair load();
+        Signature sign(OpenSSL::PrivateKey const &privateKey, Message message);      
+        bool verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message);
+
+        inline Funcs funcs() { return{load,sign,verify}; };
+    }
+
+    namespace SLHDSA
+    {
+        OpenSSL::KeyPair load();
+        Signature sign(OpenSSL::PrivateKey const &privateKey, Message message);      
+        bool verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message);
+
+        inline Funcs funcs() { return{load,sign,verify}; };
+    }
+
+
 }
 
 #pragma comment(lib,"libSign")

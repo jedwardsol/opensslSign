@@ -14,9 +14,9 @@
 
 namespace LibSign
 {
-    namespace RSA
+    namespace
     {
-        bool verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message )
+        bool verify_sha256(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message )
         {
             auto context    = OpenSSL::DigestContext{EVP_MD_CTX_new()};
 
@@ -50,24 +50,9 @@ namespace LibSign
                 throw OpenSSL::openssl_error{"EVP_DigestVerifyFinal"};
             }
         }
-    }
 
 
-    namespace EC256
-    {
-
-        bool verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message )
-        {
-            return RSA::verify(publicKey,signature,message);
-        }
-    }
-
-
-
-    namespace EC25519
-    {
-
-        bool verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message )
+        bool verify_default_algorithm(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message )
         {
             auto context    = OpenSSL::DigestContext{EVP_MD_CTX_new()};
 
@@ -99,6 +84,53 @@ namespace LibSign
                 std::print("{} ",result);
                 throw OpenSSL::openssl_error{"EVP_DigestVerifyFinal"};
             }
+        }
+    }
+
+
+    namespace RSA
+    {
+        bool verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message )
+        {
+            // documentation says that the algorthm must be specified when verifying a signature made with an RSA key
+            // although experimentation shows that `verify_default_algorithm` does work here.
+            return verify_sha256(publicKey,signature,message);
+        }
+    }
+
+    namespace EC256
+    {
+        bool verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message )
+        {
+            // documentation says that the algorthm must be specified when verifying a signature made with this EC key
+            // although experimentation shows that `verify_default_algorithm` does work here.
+            return verify_sha256(publicKey,signature,message);
+        }
+    }
+
+    namespace ED25519
+    {
+        bool verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message )
+        {
+            // documentation says that the algorthm must not be specified when verifying a signature made with this EC key
+            // and experimentation does show that `verify_sha256` does not work here 
+            return verify_default_algorithm(publicKey,signature,message);
+        }
+    }
+
+    namespace DSA
+    {
+        bool verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message )
+        {
+            return verify_sha256(publicKey,signature,message);
+        }
+    }
+
+    namespace SLHDSA
+    {
+        bool verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message )
+        {
+            return verify_default_algorithm(publicKey,signature,message);
         }
     }
 }
