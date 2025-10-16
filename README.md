@@ -7,7 +7,7 @@ Build `keygen` and run
 This generates a 
 
 * 2048 bit RSA key,  
-* key based on an Elliptic curve
+* a key based on an Elliptic curve
 * key based on an Edwards curve
 * a 2048 bit DSA key,  
 * and a SLH-DSA key

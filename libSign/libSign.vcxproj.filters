@@ -24,6 +24,9 @@
     <ClCompile Include="verify.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="generateKeys.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="libSign.h">

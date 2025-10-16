@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.14.36401.2
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "keyGen", "keyGen\keyGen.vcxproj", "{10EEAE02-1680-44F5-8887-F9BA5217974A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{20ED0B76-BF58-4AFA-9166-43C378E9329C} = {20ED0B76-BF58-4AFA-9166-43C378E9329C}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sign", "sign\sign.vcxproj", "{D72A151D-ACE2-4ED0-BEB9-24CE6A847E96}"
 	ProjectSection(ProjectDependencies) = postProject

@@ -20,64 +20,69 @@ namespace LibSign
     }
 
 
-    using KeyLoader   = std::function<OpenSSL::KeyPair()>;
-    using Signer     = std::function<Signature(OpenSSL::PrivateKey const &, Message)>;
-    using Verifier   = std::function<bool(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message)>;
+    using KeyGenerator  = std::function<OpenSSL::Key()>;
+    using KeyLoader     = std::function<OpenSSL::KeyPair()>;
+    using Signer        = std::function<Signature(OpenSSL::PrivateKey const &, Message)>;
+    using Verifier      = std::function<bool(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message)>;
 
     struct Funcs 
     {
-        KeyLoader   loadKeys;
-        Signer      sign;
-        Verifier    verify;
+        KeyGenerator    generateKeys;       // generates brand new keys
+        KeyLoader       loadKeys;           // loads keys from the serialised data in `keys.h`
+        Signer          sign;
+        Verifier        verify;
     };
 
 
     namespace RSA
     {
-        OpenSSL::KeyPair load();
-        Signature sign(OpenSSL::PrivateKey const &privateKey, Message message);      
-        bool verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message);
+        OpenSSL::Key        generate();
+        OpenSSL::KeyPair    load();
+        Signature           sign(OpenSSL::PrivateKey const &privateKey, Message message);      
+        bool                verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message);
 
-        inline Funcs funcs() { return{load,sign,verify}; };
+        inline Funcs funcs() { return{generate,load,sign,verify}; };
     }
 
     namespace EC256
     {
-        OpenSSL::KeyPair load();
-        Signature sign(OpenSSL::PrivateKey const &privateKey, Message message);      
-        bool verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message);
+        OpenSSL::Key        generate();
+        OpenSSL::KeyPair    load();
+        Signature           sign(OpenSSL::PrivateKey const &privateKey, Message message);      
+        bool                verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message);
 
-        inline Funcs funcs() { return{load,sign,verify}; };
+        inline Funcs funcs() { return{generate,load,sign,verify}; };
     }
 
     namespace ED25519
     {
-        OpenSSL::KeyPair load();
-        Signature sign(OpenSSL::PrivateKey const &privateKey, Message message);      
-        bool verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message);
+        OpenSSL::Key        generate();
+        OpenSSL::KeyPair    load();
+        Signature           sign(OpenSSL::PrivateKey const &privateKey, Message message);      
+        bool                verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message);
 
-        inline Funcs funcs() { return{load,sign,verify}; };
+        inline Funcs funcs() { return{generate,load,sign,verify}; };
     }
 
     namespace DSA
     {
-        OpenSSL::KeyPair load();
-        Signature sign(OpenSSL::PrivateKey const &privateKey, Message message);      
-        bool verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message);
+        OpenSSL::Key        generate();
+        OpenSSL::KeyPair    load();
+        Signature           sign(OpenSSL::PrivateKey const &privateKey, Message message);      
+        bool                verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message);
 
-        inline Funcs funcs() { return{load,sign,verify}; };
+        inline Funcs funcs() { return{generate,load,sign,verify}; };
     }
 
     namespace SLHDSA
     {
-        OpenSSL::KeyPair load();
-        Signature sign(OpenSSL::PrivateKey const &privateKey, Message message);      
-        bool verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message);
+        OpenSSL::Key        generate();
+        OpenSSL::KeyPair    load();
+        Signature           sign(OpenSSL::PrivateKey const &privateKey, Message message);      
+        bool                verify(OpenSSL::PublicKey const &publicKey, Signature const &signature, Message message);
 
-        inline Funcs funcs() { return{load,sign,verify}; };
+        inline Funcs funcs() { return{generate,load,sign,verify}; };
     }
-
-
 }
 
 #pragma comment(lib,"libSign")

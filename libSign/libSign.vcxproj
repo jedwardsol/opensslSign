@@ -160,6 +160,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="generateKeys.cpp" />
     <ClCompile Include="loadKeys.cpp" />
     <ClCompile Include="sign.cpp" />
     <ClCompile Include="verify.cpp" />
